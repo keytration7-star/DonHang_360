@@ -1,0 +1,80 @@
+{
+  "name": "donhang-360",
+  "version": "1.0.0",
+  "description": "Ứng dụng quản lý đơn hàng hiện đại",
+  "main": "dist-electron/main.js",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "build:electron": "npm run build:electron:preload && npm run build:electron:main",
+    "build:electron:preload": "vite build -c vite.electron.preload.config.ts",
+    "build:electron:main": "vite build -c vite.electron.main.config.ts",
+    "build:all": "npm run build && npm run build:electron && electron-builder",
+    "preview": "vite preview",
+    "electron:dev": "npm run build:electron && concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "electron:build": "npm run build:all"
+  },
+  "keywords": [
+    "order-management",
+    "electron",
+    "react",
+    "typescript"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/react": "^18.2.43",
+    "@types/react-dom": "^18.2.17",
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.16",
+    "concurrently": "^8.2.2",
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1",
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.8",
+    "vite-plugin-electron": "^0.28.0",
+    "wait-on": "^7.2.0"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.14.2",
+    "axios": "^1.6.2",
+    "date-fns": "^3.0.6",
+    "firebase": "^10.7.1",
+    "lucide-react": "^0.303.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.21.1",
+    "recharts": "^2.10.3",
+    "xlsx": "^0.18.5",
+    "zustand": "^4.4.7"
+  },
+  "build": {
+    "appId": "com.donhang360.app",
+    "productName": "Đơn Hàng 360",
+    "name": "DonHang360",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico",
+      "installerHeaderIcon": "assets/icon.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  }
+}
+

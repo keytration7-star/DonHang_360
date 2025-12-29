@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Đơn Hàng 360 - Quản Lý Đơn Hàng</title>
+    <style>
+      /* Đảm bảo input có thể nhận focus trong Electron */
+      input, textarea, select {
+        -webkit-user-select: text;
+        user-select: text;
+      }
+      
+      /* Đảm bảo không có vấn đề với focus */
+      *:focus {
+        outline: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+
