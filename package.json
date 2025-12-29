@@ -1,6 +1,6 @@
 {
   "name": "donhang-360",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Ứng dụng quản lý đơn hàng hiện đại",
   "main": "dist-electron/main.js",
   "type": "module",
