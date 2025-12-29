@@ -29,7 +29,7 @@ export default defineConfig({
       ],
       output: {
         entryFileNames: 'main.js',
-        format: 'es',
+        format: 'cjs', // Đổi sang CommonJS để tương thích với electron-updater
       },
     },
   },

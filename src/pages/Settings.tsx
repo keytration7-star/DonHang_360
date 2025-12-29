@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Save, Database, Download, Upload, Trash2, Info } from 'lucide-react';
+import { Save, Database, Download, Upload, Trash2, Info, X, Settings as SettingsIcon } from 'lucide-react';
 import { orderService } from '../services/orderService';
 import { indexedDBService } from '../services/indexedDBService';
 
@@ -16,6 +16,7 @@ const Settings = () => {
 
   const [storageInfo, setStorageInfo] = useState<{ count: number; estimatedSize: number } | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showFirebaseModal, setShowFirebaseModal] = useState(false);
 
   useEffect(() => {
     loadStorageInfo();
@@ -34,7 +35,13 @@ const Settings = () => {
     Object.entries(firebaseConfig).forEach(([key, value]) => {
       localStorage.setItem(`firebase_${key}`, value);
     });
-    alert('Đã lưu cấu hình Firebase! Vui lòng khởi động lại ứng dụng.');
+    alert('Đã lưu cấu hình Firebase! Vui lòng khởi động lại ứng dụng để áp dụng thay đổi.');
+    setShowFirebaseModal(false);
+  };
+
+  // Kiểm tra xem Firebase đã được cấu hình chưa
+  const isFirebaseConfigured = () => {
+    return !!(firebaseConfig.apiKey && firebaseConfig.databaseURL);
   };
 
   const handleExport = async () => {
@@ -141,101 +148,176 @@ const Settings = () => {
 
       {/* Firebase Configuration */}
       <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          <Database size={24} className="text-primary-600" />
-          Cấu hình Firebase (Tùy chọn)
-        </h2>
-        <p className="text-sm text-gray-600 mb-4">
-          Cấu hình Firebase để đồng bộ dữ liệu giữa các thiết bị. Nếu không cấu hình, dữ liệu sẽ chỉ lưu trên máy tính này.
-        </p>
-
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">API Key</label>
-            <input
-              type="text"
-              value={firebaseConfig.apiKey}
-              onChange={(e) => setFirebaseConfig({ ...firebaseConfig, apiKey: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              placeholder="AIza..."
-            />
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Database size={24} className="text-primary-600" />
+            <h2 className="text-xl font-semibold">Cấu hình Firebase (Tùy chọn)</h2>
           </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Auth Domain</label>
-            <input
-              type="text"
-              value={firebaseConfig.authDomain}
-              onChange={(e) => setFirebaseConfig({ ...firebaseConfig, authDomain: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              placeholder="your-project.firebaseapp.com"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Database URL</label>
-            <input
-              type="text"
-              value={firebaseConfig.databaseURL}
-              onChange={(e) => setFirebaseConfig({ ...firebaseConfig, databaseURL: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              placeholder="https://your-project.firebaseio.com"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Project ID</label>
-            <input
-              type="text"
-              value={firebaseConfig.projectId}
-              onChange={(e) => setFirebaseConfig({ ...firebaseConfig, projectId: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              placeholder="your-project-id"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Storage Bucket</label>
-            <input
-              type="text"
-              value={firebaseConfig.storageBucket}
-              onChange={(e) => setFirebaseConfig({ ...firebaseConfig, storageBucket: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              placeholder="your-project.appspot.com"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Messaging Sender ID</label>
-            <input
-              type="text"
-              value={firebaseConfig.messagingSenderId}
-              onChange={(e) => setFirebaseConfig({ ...firebaseConfig, messagingSenderId: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              placeholder="123456789"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">App ID</label>
-            <input
-              type="text"
-              value={firebaseConfig.appId}
-              onChange={(e) => setFirebaseConfig({ ...firebaseConfig, appId: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              placeholder="1:123456789:web:abc123"
-            />
-          </div>
-
           <button
-            onClick={handleSave}
-            className="w-full bg-primary-600 text-white py-2 px-4 rounded-lg hover:bg-primary-700 flex items-center justify-center gap-2"
+            onClick={() => setShowFirebaseModal(true)}
+            className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 flex items-center gap-2 transition-colors"
           >
-            <Save size={20} />
-            Lưu cấu hình
+            <SettingsIcon size={20} />
+            {isFirebaseConfigured() ? 'Chỉnh sửa cấu hình' : 'Cấu hình Firebase'}
           </button>
         </div>
+        <p className="text-sm text-gray-600 mb-2">
+          Cấu hình Firebase để đồng bộ dữ liệu giữa các thiết bị. Nếu không cấu hình, dữ liệu sẽ chỉ lưu trên máy tính này.
+        </p>
+        {isFirebaseConfigured() && (
+          <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+            <p className="text-sm text-green-800">
+              <strong>✓ Firebase đã được cấu hình</strong>
+            </p>
+            <p className="text-xs text-green-700 mt-1">
+              Database URL: {firebaseConfig.databaseURL.substring(0, 50)}...
+            </p>
+          </div>
+        )}
       </div>
+
+      {/* Firebase Configuration Modal */}
+      {showFirebaseModal && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" 
+          onClick={() => setShowFirebaseModal(false)}
+        >
+          <div 
+            className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" 
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between z-10">
+              <div className="flex items-center gap-2">
+                <Database size={24} className="text-primary-600" />
+                <h2 className="text-2xl font-bold text-gray-800">Cấu hình Firebase</h2>
+              </div>
+              <button
+                onClick={() => setShowFirebaseModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm text-blue-800">
+                  <strong>Hướng dẫn:</strong> Để lấy thông tin cấu hình Firebase, vào Firebase Console → Project Settings → General → Your apps → Web app.
+                  Copy các thông tin tương ứng vào các ô bên dưới.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    API Key <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={firebaseConfig.apiKey}
+                    onChange={(e) => setFirebaseConfig({ ...firebaseConfig, apiKey: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    placeholder="AIza..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Auth Domain</label>
+                  <input
+                    type="text"
+                    value={firebaseConfig.authDomain}
+                    onChange={(e) => setFirebaseConfig({ ...firebaseConfig, authDomain: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    placeholder="your-project.firebaseapp.com"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Database URL <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={firebaseConfig.databaseURL}
+                    onChange={(e) => setFirebaseConfig({ ...firebaseConfig, databaseURL: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    placeholder="https://your-project.firebaseio.com"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">URL của Firebase Realtime Database</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Project ID</label>
+                  <input
+                    type="text"
+                    value={firebaseConfig.projectId}
+                    onChange={(e) => setFirebaseConfig({ ...firebaseConfig, projectId: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    placeholder="your-project-id"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Storage Bucket</label>
+                  <input
+                    type="text"
+                    value={firebaseConfig.storageBucket}
+                    onChange={(e) => setFirebaseConfig({ ...firebaseConfig, storageBucket: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    placeholder="your-project.appspot.com"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Messaging Sender ID</label>
+                  <input
+                    type="text"
+                    value={firebaseConfig.messagingSenderId}
+                    onChange={(e) => setFirebaseConfig({ ...firebaseConfig, messagingSenderId: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    placeholder="123456789"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">App ID</label>
+                  <input
+                    type="text"
+                    value={firebaseConfig.appId}
+                    onChange={(e) => setFirebaseConfig({ ...firebaseConfig, appId: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    placeholder="1:123456789:web:abc123"
+                  />
+                </div>
+
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <p className="text-sm text-yellow-800">
+                    <strong>Lưu ý:</strong> Chỉ cần điền <strong>API Key</strong> và <strong>Database URL</strong> là đủ để sử dụng Firebase Realtime Database.
+                    Các trường khác là tùy chọn.
+                  </p>
+                </div>
+
+                <div className="flex gap-3 pt-4 border-t">
+                  <button
+                    onClick={handleSave}
+                    disabled={!firebaseConfig.apiKey || !firebaseConfig.databaseURL}
+                    className="flex-1 bg-primary-600 text-white py-2 px-4 rounded-lg hover:bg-primary-700 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <Save size={20} />
+                    Lưu cấu hình
+                  </button>
+                  <button
+                    onClick={() => setShowFirebaseModal(false)}
+                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Hủy
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Data Management */}
       <div className="bg-white rounded-lg shadow p-6">

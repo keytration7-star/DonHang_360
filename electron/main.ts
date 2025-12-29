@@ -1,5 +1,4 @@
 import { app, BrowserWindow, dialog } from 'electron';
-import { autoUpdater } from 'electron-updater';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -8,12 +7,30 @@ const __dirname = path.dirname(__filename);
 
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 
-// Cấu hình auto-updater
-autoUpdater.setAutoDownload(false);
-autoUpdater.setAutoInstallOnAppQuit(true);
+// Import và cấu hình auto-updater (chỉ trong production)
+let autoUpdater: any = null;
 
-// Chỉ check update trong production
-if (!isDev) {
+function initAutoUpdater() {
+  if (isDev) return;
+  
+  try {
+    // Sử dụng require cho CommonJS module (sẽ được build thành require trong output)
+    // @ts-ignore - electron-updater là CommonJS module
+    const electronUpdater = require('electron-updater');
+    autoUpdater = electronUpdater.autoUpdater;
+    
+    // Cấu hình auto-updater
+    autoUpdater.setAutoDownload(false);
+    autoUpdater.setAutoInstallOnAppQuit(true);
+    
+    setupAutoUpdater();
+  } catch (error) {
+    console.error('Lỗi import electron-updater:', error);
+  }
+}
+
+function setupAutoUpdater() {
+  if (!autoUpdater) return;
   // Check for updates khi app khởi động
   app.whenReady().then(() => {
     autoUpdater.checkForUpdates().catch(err => {
@@ -33,7 +50,7 @@ if (!isDev) {
     console.log('Đang kiểm tra cập nhật...');
   });
 
-  autoUpdater.on('update-available', (info) => {
+  autoUpdater.on('update-available', (info: any) => {
     console.log('Có bản cập nhật mới:', info.version);
     dialog.showMessageBox({
       type: 'info',
@@ -44,7 +61,7 @@ if (!isDev) {
       cancelId: 1
     }).then((result) => {
       if (result.response === 0) {
-        autoUpdater.downloadUpdate().catch(err => {
+        autoUpdater.downloadUpdate().catch((err: Error) => {
           console.error('Lỗi tải cập nhật:', err);
           dialog.showErrorBox('Lỗi', 'Không thể tải cập nhật. Vui lòng thử lại sau.');
         });
@@ -52,20 +69,20 @@ if (!isDev) {
     });
   });
 
-  autoUpdater.on('update-not-available', (info) => {
+  autoUpdater.on('update-not-available', (info: any) => {
     console.log('Đã có phiên bản mới nhất:', info.version);
   });
 
-  autoUpdater.on('error', (err) => {
+  autoUpdater.on('error', (err: Error) => {
     console.error('Lỗi auto-updater:', err);
   });
 
-  autoUpdater.on('download-progress', (progressObj) => {
+  autoUpdater.on('download-progress', (progressObj: any) => {
     let log_message = `Tốc độ tải: ${progressObj.bytesPerSecond} - Đã tải: ${progressObj.percent}% (${progressObj.transferred}/${progressObj.total})`;
     console.log(log_message);
   });
 
-  autoUpdater.on('update-downloaded', (info) => {
+  autoUpdater.on('update-downloaded', (info: any) => {
     console.log('Đã tải xong cập nhật:', info.version);
     dialog.showMessageBox({
       type: 'info',
@@ -81,6 +98,9 @@ if (!isDev) {
     });
   });
 }
+
+// Khởi tạo auto-updater
+initAutoUpdater();
 
 function createWindow() {
   const mainWindow = new BrowserWindow({
