@@ -9,7 +9,24 @@ export default defineConfig({
     minify: false,
     rollupOptions: {
       input: resolve(__dirname, 'electron/main.ts'),
-      external: ['electron', 'path', 'url', 'fs', 'os'],
+      external: [
+        'electron',
+        'path',
+        'url',
+        'fs',
+        'os',
+        'crypto',
+        'events',
+        'zlib',
+        'http',
+        'https',
+        'child_process',
+        'stream',
+        'util',
+        'assert',
+        'constants',
+        'electron-updater'
+      ],
       output: {
         entryFileNames: 'main.js',
         format: 'es',

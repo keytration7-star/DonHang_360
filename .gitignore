@@ -26,6 +26,11 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 
+# GitHub token (không commit token)
+.env.github
+.env.github.example
+GH_TOKEN
+
 # Editor
 .vscode/
 .idea/

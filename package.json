@@ -10,7 +10,8 @@
     "build:electron": "npm run build:electron:preload && npm run build:electron:main",
     "build:electron:preload": "vite build -c vite.electron.preload.config.ts",
     "build:electron:main": "vite build -c vite.electron.main.config.ts",
-    "build:all": "npm run build && npm run build:electron && electron-builder",
+    "build:all": "npm run build && npm run build:electron && electron-builder --publish always",
+    "build:all:no-publish": "npm run build && npm run build:electron && electron-builder --publish never",
     "preview": "vite preview",
     "electron:dev": "npm run build:electron && concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
     "electron:build": "npm run build:all"
@@ -42,6 +43,7 @@
     "@tanstack/react-query": "^5.14.2",
     "axios": "^1.6.2",
     "date-fns": "^3.0.6",
+    "electron-updater": "^6.6.2",
     "firebase": "^10.7.1",
     "lucide-react": "^0.303.0",
     "react": "^18.2.0",
@@ -74,7 +76,13 @@
       "installerHeaderIcon": "assets/icon.ico",
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "keytration7-star",
+      "repo": "DonHang_360",
+      "private": false,
+      "releaseType": "release"
     }
   }
 }
-

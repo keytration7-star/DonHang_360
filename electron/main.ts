@@ -1,4 +1,5 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, dialog } from 'electron';
+import { autoUpdater } from 'electron-updater';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -6,6 +7,80 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
+
+// Cấu hình auto-updater
+autoUpdater.setAutoDownload(false);
+autoUpdater.setAutoInstallOnAppQuit(true);
+
+// Chỉ check update trong production
+if (!isDev) {
+  // Check for updates khi app khởi động
+  app.whenReady().then(() => {
+    autoUpdater.checkForUpdates().catch(err => {
+      console.error('Lỗi kiểm tra cập nhật:', err);
+    });
+  });
+
+  // Check for updates mỗi 4 giờ
+  setInterval(() => {
+    autoUpdater.checkForUpdates().catch(err => {
+      console.error('Lỗi kiểm tra cập nhật:', err);
+    });
+  }, 4 * 60 * 60 * 1000); // 4 giờ
+
+  // Event handlers cho auto-updater
+  autoUpdater.on('checking-for-update', () => {
+    console.log('Đang kiểm tra cập nhật...');
+  });
+
+  autoUpdater.on('update-available', (info) => {
+    console.log('Có bản cập nhật mới:', info.version);
+    dialog.showMessageBox({
+      type: 'info',
+      title: 'Có bản cập nhật mới',
+      message: `Phiên bản ${info.version} đã có sẵn. Bạn có muốn tải xuống ngay bây giờ?`,
+      buttons: ['Tải xuống', 'Bỏ qua'],
+      defaultId: 0,
+      cancelId: 1
+    }).then((result) => {
+      if (result.response === 0) {
+        autoUpdater.downloadUpdate().catch(err => {
+          console.error('Lỗi tải cập nhật:', err);
+          dialog.showErrorBox('Lỗi', 'Không thể tải cập nhật. Vui lòng thử lại sau.');
+        });
+      }
+    });
+  });
+
+  autoUpdater.on('update-not-available', (info) => {
+    console.log('Đã có phiên bản mới nhất:', info.version);
+  });
+
+  autoUpdater.on('error', (err) => {
+    console.error('Lỗi auto-updater:', err);
+  });
+
+  autoUpdater.on('download-progress', (progressObj) => {
+    let log_message = `Tốc độ tải: ${progressObj.bytesPerSecond} - Đã tải: ${progressObj.percent}% (${progressObj.transferred}/${progressObj.total})`;
+    console.log(log_message);
+  });
+
+  autoUpdater.on('update-downloaded', (info) => {
+    console.log('Đã tải xong cập nhật:', info.version);
+    dialog.showMessageBox({
+      type: 'info',
+      title: 'Cập nhật đã sẵn sàng',
+      message: `Phiên bản ${info.version} đã được tải xuống. Ứng dụng sẽ được cập nhật khi bạn khởi động lại.`,
+      buttons: ['Khởi động lại ngay', 'Khởi động lại sau'],
+      defaultId: 0,
+      cancelId: 1
+    }).then((result) => {
+      if (result.response === 0) {
+        autoUpdater.quitAndInstall(false, true);
+      }
+    });
+  });
+}
 
 function createWindow() {
   const mainWindow = new BrowserWindow({
@@ -60,7 +135,10 @@ function createWindow() {
     mainWindow.loadURL(`http://localhost:5173?t=${Date.now()}`, { 
       extraHeaders: 'pragma: no-cache\ncache-control: no-cache\n' 
     });
-    mainWindow.webContents.openDevTools();
+    // Chỉ mở DevTools khi có biến môi trường ENABLE_DEVTOOLS hoặc khi chạy với flag
+    if (process.env.ENABLE_DEVTOOLS === 'true') {
+      mainWindow.webContents.openDevTools();
+    }
   } else {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   }
