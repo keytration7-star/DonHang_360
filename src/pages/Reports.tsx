@@ -11,7 +11,9 @@ const Reports = () => {
   const { orders, fetchOrders } = useOrderStore();
 
   useEffect(() => {
-    fetchOrders();
+    fetchOrders().catch((err) => {
+      console.error('Lỗi tải dữ liệu:', err);
+    });
   }, [fetchOrders]);
 
   const stats = calculateOrderStats(orders);

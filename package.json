@@ -1,8 +1,8 @@
 {
   "name": "donhang-360",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "description": "Ứng dụng quản lý đơn hàng hiện đại",
-  "main": "dist-electron/main.js",
+  "main": "dist-electron/main.cjs",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -61,7 +61,15 @@
     },
     "files": [
       "dist/**/*",
-      "dist-electron/**/*"
+      "dist-electron/**/*",
+      "!dist-electron/main.js",
+      "icon.ico"
+    ],
+    "extraResources": [
+      {
+        "from": "icon.ico",
+        "to": "icon.ico"
+      }
     ],
     "win": {
       "target": "nsis",
@@ -75,13 +83,15 @@
       "installerHeaderIcon": "icon.ico",
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
+      "shortcutName": "Đơn Hàng 360",
       "runAfterFinish": true,
       "deleteAppDataOnUninstall": false,
       "warningsAsErrors": false,
       "allowElevation": true,
       "perMachine": false,
       "differentialPackage": true,
-      "include": "build/installer.nsh"
+      "include": "build/installer.nsh",
+      "artifactName": "${productName} Setup ${version}.${ext}"
     },
     "publish": {
       "provider": "github",

@@ -28,7 +28,9 @@ const Warnings = () => {
   const [note, setNote] = useState('');
 
   useEffect(() => {
-    fetchOrders();
+    fetchOrders().catch((err) => {
+      console.error('Lỗi tải dữ liệu:', err);
+    });
   }, [fetchOrders]);
 
   const warnings = useMemo(() => getWarningOrders(orders), [orders]);

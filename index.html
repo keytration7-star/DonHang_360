@@ -20,6 +20,27 @@
   </head>
   <body>
     <div id="root"></div>
+    <!-- Inline script để debug ngay lập tức -->
+    <script>
+      console.log('🔍 HTML đã load - inline script chạy');
+      console.log('Location:', window.location.href);
+      console.log('Protocol:', window.location.protocol);
+      console.log('Root element:', document.getElementById('root'));
+      
+      // Kiểm tra xem script module có load không
+      window.addEventListener('error', function(e) {
+        console.error('❌ Script error:', e.message, e.filename, e.lineno);
+      });
+      
+      // Log khi DOM ready
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+          console.log('✅ DOM Content Loaded');
+        });
+      } else {
+        console.log('✅ DOM đã sẵn sàng');
+      }
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

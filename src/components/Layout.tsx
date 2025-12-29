@@ -14,6 +14,8 @@ interface LayoutProps {
 
 const Layout = ({ children }: LayoutProps) => {
   const location = useLocation();
+  
+  console.log('🏗️ Layout đang render, location:', location.pathname);
 
   const menuItems = [
     { path: '/', icon: LayoutDashboard, label: 'Tổng quan' },

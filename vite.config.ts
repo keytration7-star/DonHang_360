@@ -26,6 +26,10 @@ export default defineConfig({
         assetFileNames: `assets/[name]-[hash].[ext]`,
       },
     },
+    // Đảm bảo không có vấn đề với module loading trong Electron
+    commonjsOptions: {
+      include: [/node_modules/],
+    },
   },
 });
 

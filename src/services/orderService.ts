@@ -30,19 +30,23 @@ class OrderService {
   }
 
   async getAllOrders(): Promise<Order[]> {
+    console.log('🔧 OrderService - getAllOrders bắt đầu');
     // Migrate từ localStorage nếu cần (chỉ 1 lần)
     await this.migrateFromLocalStorage();
     
     // Ưu tiên IndexedDB (nhanh hơn, lưu trữ lớn hơn)
     let orders: Order[] = [];
     try {
+      console.log('🔧 OrderService - đang lấy từ IndexedDB...');
       orders = await indexedDBService.getOrders();
+      console.log(`✅ OrderService - đã lấy ${orders.length} đơn hàng từ IndexedDB`);
     } catch (error) {
-      console.warn('Lỗi lấy dữ liệu từ IndexedDB, thử localStorage:', error);
+      console.warn('⚠️ OrderService - Lỗi lấy dữ liệu từ IndexedDB, thử localStorage:', error);
       try {
         orders = await localStorageService.getOrders();
+        console.log(`✅ OrderService - đã lấy ${orders.length} đơn hàng từ localStorage`);
       } catch (localError) {
-        console.error('Lỗi lấy dữ liệu từ localStorage:', localError);
+        console.error('❌ OrderService - Lỗi lấy dữ liệu từ localStorage:', localError);
       }
     }
 

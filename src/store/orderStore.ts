@@ -20,14 +20,22 @@ export const useOrderStore = create<OrderStore>((set, get) => ({
   error: null,
 
   fetchOrders: async () => {
+    console.log('📦 OrderStore - fetchOrders bắt đầu');
     set({ loading: true, error: null });
     try {
+      console.log('📦 OrderStore - đang gọi orderService.getAllOrders()...');
       const orders = await orderService.getAllOrders();
-      set({ orders, loading: false });
+      console.log(`📦 OrderStore - đã nhận được ${orders.length} đơn hàng`);
+      set({ orders, loading: false, error: null });
+      console.log('✅ OrderStore - fetchOrders thành công');
     } catch (error) {
-      // Don't set error state, just log warning and continue with empty array
-      console.warn('Không thể tải đơn hàng:', error);
-      set({ orders: [], loading: false, error: null });
+      const errorMessage = error instanceof Error ? error.message : 'Không thể tải đơn hàng. Vui lòng thử lại.';
+      console.error('❌ OrderStore - Lỗi tải đơn hàng:', error);
+      console.error('❌ Error details:', {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      set({ orders: [], loading: false, error: errorMessage });
     }
   },
 

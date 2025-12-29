@@ -28,7 +28,7 @@ export default defineConfig({
         'electron-updater'
       ],
       output: {
-        entryFileNames: 'main.js',
+        entryFileNames: 'main.cjs', // Đổi thành .cjs để Node.js nhận diện là CommonJS
         format: 'cjs', // Đổi sang CommonJS để tương thích với electron-updater
       },
     },

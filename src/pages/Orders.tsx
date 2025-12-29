@@ -10,7 +10,7 @@ import { useDebounce } from '../hooks/useDebounce';
 const ITEMS_PER_PAGE_OPTIONS = [50, 100, 150, 200, 250, 300, 400, 500, 750, 1000];
 
 const Orders = () => {
-  const { orders, fetchOrders, searchOrders, loading } = useOrderStore();
+  const { orders, fetchOrders, searchOrders, loading, error } = useOrderStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all');
   const [showUploader, setShowUploader] = useState<'sent' | 'delivered' | 'returned' | 'cancelled' | null>(null);
@@ -26,7 +26,9 @@ const Orders = () => {
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   useEffect(() => {
-    fetchOrders();
+    fetchOrders().catch((err) => {
+      console.error('Lỗi tải dữ liệu:', err);
+    });
   }, [fetchOrders]);
 
   // Memoize filtered orders để tránh tính toán lại không cần thiết
@@ -149,6 +151,30 @@ const Orders = () => {
             fetchOrders();
           }}
         />
+      )}
+
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+          <p className="text-red-800 font-semibold mb-2">Lỗi tải dữ liệu</p>
+          <p className="text-red-600 text-sm mb-4">{error}</p>
+          <button
+            onClick={() => fetchOrders()}
+            className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 text-sm"
+          >
+            Thử lại
+          </button>
+        </div>
+      )}
+
+      {/* Loading State */}
+      {loading && orders.length === 0 && (
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Đang tải dữ liệu...</p>
+          </div>
+        </div>
       )}
 
       {/* Search and Filter - Cố định */}

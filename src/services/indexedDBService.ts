@@ -13,41 +13,85 @@ class IndexedDBService {
     }
 
     return new Promise((resolve, reject) => {
+      // Kiểm tra xem IndexedDB có được hỗ trợ không
+      if (!window.indexedDB) {
+        const error = new Error('IndexedDB không được hỗ trợ trong trình duyệt này');
+        console.error(error);
+        reject(error);
+        return;
+      }
+
       const request = indexedDB.open(DB_NAME, DB_VERSION);
 
-      request.onerror = () => reject(request.error);
+      request.onerror = () => {
+        const error = request.error || new Error('Không thể mở IndexedDB');
+        console.error('Lỗi mở IndexedDB:', error);
+        reject(error);
+      };
+
       request.onsuccess = () => {
         this.db = request.result;
+        
+        // Xử lý lỗi khi database bị đóng
+        this.db.onerror = (event) => {
+          console.error('Lỗi IndexedDB:', event);
+        };
+        
+        this.db.onclose = () => {
+          console.warn('IndexedDB đã bị đóng');
+          this.db = null;
+        };
+        
         resolve(this.db);
       };
 
       request.onupgradeneeded = (event) => {
         const db = (event.target as IDBOpenDBRequest).result;
         if (!db.objectStoreNames.contains(STORE_NAME)) {
-          const objectStore = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
-          objectStore.createIndex('trackingNumber', 'trackingNumber', { unique: true });
-          objectStore.createIndex('status', 'status', { unique: false });
-          objectStore.createIndex('sendDate', 'sendDate', { unique: false });
+          try {
+            const objectStore = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+            objectStore.createIndex('trackingNumber', 'trackingNumber', { unique: true });
+            objectStore.createIndex('status', 'status', { unique: false });
+            objectStore.createIndex('sendDate', 'sendDate', { unique: false });
+            console.log('Đã tạo object store và indexes');
+          } catch (error) {
+            console.error('Lỗi tạo object store:', error);
+            reject(error);
+          }
         }
       };
     });
   }
 
   async getOrders(): Promise<Order[]> {
+    console.log('🗄️ IndexedDBService - getOrders bắt đầu');
     try {
+      console.log('🗄️ IndexedDBService - đang mở database...');
       const db = await this.openDB();
+      console.log('✅ IndexedDBService - database đã mở');
       return new Promise((resolve, reject) => {
+        console.log('🗄️ IndexedDBService - đang tạo transaction...');
         const transaction = db.transaction([STORE_NAME], 'readonly');
         const store = transaction.objectStore(STORE_NAME);
+        console.log('🗄️ IndexedDBService - đang getAll()...');
         const request = store.getAll();
 
-        request.onerror = () => reject(request.error);
+        request.onerror = () => {
+          console.error('❌ IndexedDBService - Lỗi request:', request.error);
+          reject(request.error);
+        };
         request.onsuccess = () => {
-          resolve(request.result || []);
+          const orders = request.result || [];
+          console.log(`✅ IndexedDBService - Đã load ${orders.length} đơn hàng từ IndexedDB`);
+          resolve(orders);
         };
       });
     } catch (error) {
-      console.error('Lỗi đọc dữ liệu từ IndexedDB:', error);
+      console.error('❌ IndexedDBService - Lỗi đọc dữ liệu từ IndexedDB:', error);
+      console.error('❌ Error details:', {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
       return [];
     }
   }

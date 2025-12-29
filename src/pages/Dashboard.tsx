@@ -16,13 +16,53 @@ import ExpandableExplanation from '../components/ExpandableExplanation';
 import { Link } from 'react-router-dom';
 
 const Dashboard = () => {
-  const { orders, fetchOrders } = useOrderStore();
+  const { orders, fetchOrders, loading, error } = useOrderStore();
+
+  console.log('📊 Dashboard đang render');
+  console.log('Orders count:', orders.length);
+  console.log('Loading:', loading);
+  console.log('Error:', error);
 
   useEffect(() => {
-    fetchOrders().catch(() => {
-      // Error already handled in store
-    });
+    console.log('🔄 Dashboard useEffect - đang fetch orders...');
+    fetchOrders()
+      .then(() => {
+        console.log('✅ Dashboard - fetch orders thành công');
+      })
+      .catch((err) => {
+        console.error('❌ Dashboard - Lỗi tải dữ liệu:', err);
+      });
   }, [fetchOrders]);
+
+  // Hiển thị loading state
+  if (loading && orders.length === 0) {
+    return (
+      <div className="p-6 flex items-center justify-center h-full">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Đang tải dữ liệu...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Hiển thị error state
+  if (error && orders.length === 0) {
+    return (
+      <div className="p-6">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p className="text-red-800 font-semibold mb-2">Lỗi tải dữ liệu</p>
+          <p className="text-red-600 text-sm mb-4">{error}</p>
+          <button
+            onClick={() => fetchOrders()}
+            className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
+          >
+            Thử lại
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const stats = calculateOrderStats(orders);
   const regionStats = calculateRegionStats(orders);

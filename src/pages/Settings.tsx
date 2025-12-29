@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Save, Database, Download, Upload, Trash2, Info, X, Settings as SettingsIcon } from 'lucide-react';
+import { Save, Database, Download, Upload, Trash2, Info, X, Settings as SettingsIcon, RefreshCw, CheckCircle } from 'lucide-react';
 import { orderService } from '../services/orderService';
 import { indexedDBService } from '../services/indexedDBService';
 
@@ -17,9 +17,16 @@ const Settings = () => {
   const [storageInfo, setStorageInfo] = useState<{ count: number; estimatedSize: number } | null>(null);
   const [loading, setLoading] = useState(false);
   const [showFirebaseModal, setShowFirebaseModal] = useState(false);
+  const [appVersion, setAppVersion] = useState<string>('1.0.1');
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [updateStatus, setUpdateStatus] = useState<string>('');
 
   useEffect(() => {
     loadStorageInfo();
+    // Lấy version từ Electron API nếu có
+    if (window.electronAPI) {
+      setAppVersion(window.electronAPI.getAppVersion());
+    }
   }, []);
 
   const loadStorageInfo = async () => {
@@ -360,6 +367,49 @@ const Settings = () => {
             <strong>Lưu ý:</strong> Dữ liệu được lưu vĩnh viễn trên máy tính này bằng IndexedDB (hỗ trợ lưu trữ lớn, nhanh).
             Bạn có thể xuất dữ liệu để sao lưu hoặc chuyển sang máy tính khác.
           </p>
+        </div>
+      </div>
+
+      {/* App Version & Update - Compact */}
+      <div className="bg-white rounded-lg shadow p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-gray-600">Phiên bản:</span>
+            <span className="text-sm font-medium text-gray-800">v{appVersion}</span>
+            {updateStatus && (
+              <span className={`text-xs ${updateStatus.includes('mới nhất') ? 'text-green-600' : updateStatus.includes('Lỗi') ? 'text-red-600' : 'text-blue-600'}`}>
+                {updateStatus.includes('mới nhất') && <CheckCircle size={12} className="inline mr-1" />}
+                {updateStatus.length > 30 ? updateStatus.substring(0, 30) + '...' : updateStatus}
+              </span>
+            )}
+          </div>
+          {window.electronAPI && (
+            <button
+              onClick={async () => {
+                setCheckingUpdate(true);
+                setUpdateStatus('Đang kiểm tra...');
+                try {
+                  const result = await window.electronAPI!.checkForUpdates();
+                  if (result.error) {
+                    setUpdateStatus(`Lỗi: ${result.error.substring(0, 50)}`);
+                  } else if (result.updateInfo) {
+                    setUpdateStatus(`Có cập nhật v${result.updateInfo.version}`);
+                  } else {
+                    setUpdateStatus('Đã là mới nhất');
+                  }
+                } catch (error) {
+                  setUpdateStatus(`Lỗi: ${error instanceof Error ? error.message.substring(0, 30) : 'Không thể kiểm tra'}`);
+                } finally {
+                  setCheckingUpdate(false);
+                }
+              }}
+              disabled={checkingUpdate}
+              className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 py-1.5 px-3 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+            >
+              <RefreshCw size={12} className={checkingUpdate ? 'animate-spin' : ''} />
+              {checkingUpdate ? 'Đang kiểm tra...' : 'Kiểm tra cập nhật'}
+            </button>
+          )}
         </div>
       </div>
     </div>

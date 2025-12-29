@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -6,6 +6,38 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
+
+// Helper để lấy path đúng trong production
+function getResourcePath(relativePath: string): string {
+  if (isDev) {
+    return path.join(__dirname, '..', relativePath);
+  }
+  // Trong production với electron-builder:
+  // - app.getAppPath() trả về path đến app.asar hoặc app folder
+  // - dist folder nằm trong app.asar/dist
+  const appPath = app.getAppPath();
+  console.log('App path:', appPath);
+  return path.join(appPath, 'dist', relativePath);
+}
+
+function getIconPath(): string {
+  if (isDev) {
+    return path.join(__dirname, '../icon.ico');
+  }
+  // Trong production, icon có thể ở:
+  // 1. Trong app.asar (nếu được include trong files)
+  // 2. Trong resources folder (nếu dùng extraResources)
+  // Thử app path trước
+  const appPath = app.getAppPath();
+  const iconInApp = path.join(appPath, 'icon.ico');
+  // Nếu không có, thử resources
+  const iconInResources = process.resourcesPath 
+    ? path.join(process.resourcesPath, '..', 'icon.ico')
+    : null;
+  
+  // Trả về path đầu tiên (sẽ được kiểm tra khi sử dụng)
+  return iconInResources || iconInApp;
+}
 
 // Import và cấu hình auto-updater (chỉ trong production)
 let autoUpdater: any = null;
@@ -18,6 +50,14 @@ function initAutoUpdater() {
     // @ts-ignore - electron-updater là CommonJS module
     const electronUpdater = require('electron-updater');
     autoUpdater = electronUpdater.autoUpdater;
+    
+    // Cấu hình provider GitHub
+    // @ts-ignore
+    autoUpdater.setFeedURL({
+      provider: 'github',
+      owner: 'keytration7-star',
+      repo: 'DonHang_360',
+    });
     
     // Cấu hình auto-updater
     autoUpdater.setAutoDownload(false);
@@ -102,6 +142,34 @@ function setupAutoUpdater() {
 // Khởi tạo auto-updater
 initAutoUpdater();
 
+// IPC handler để check update từ renderer
+ipcMain.handle('check-for-updates', async () => {
+  if (!autoUpdater || isDev) {
+    return { error: 'Auto-updater không khả dụng trong development mode' };
+  }
+  try {
+    const result = await autoUpdater.checkForUpdates();
+    return { 
+      success: true, 
+      updateInfo: result?.updateInfo || null,
+      message: 'Đang kiểm tra cập nhật...'
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Lỗi không xác định';
+    // Ẩn các lỗi 404 hoặc network không quan trọng
+    if (errorMessage.includes('404') || errorMessage.includes('ENOTFOUND')) {
+      return { 
+        error: 'Không tìm thấy bản cập nhật. Vui lòng kiểm tra kết nối mạng.',
+        success: false 
+      };
+    }
+    return { 
+      error: errorMessage,
+      success: false 
+    };
+  }
+});
+
 function createWindow() {
   const mainWindow = new BrowserWindow({
     width: 1400,
@@ -118,8 +186,12 @@ function createWindow() {
       enableWebSQL: false,
       // Đảm bảo input hoạt động tốt
       backgroundThrottling: false,
+      // Tạm thời disable webSecurity để test (sẽ bật lại sau)
+      webSecurity: false,
+      // Đảm bảo script có thể load
+      allowRunningInsecureContent: true,
     },
-    icon: path.join(__dirname, '../icon.ico'),
+    icon: getIconPath(),
     titleBarStyle: 'default',
     frame: true,
     // Đảm bảo window có thể nhận focus
@@ -135,10 +207,27 @@ function createWindow() {
 
   // Xử lý focus để input hoạt động đúng
   mainWindow.webContents.on('did-finish-load', () => {
+    console.log('✅ Window did-finish-load');
     // Đảm bảo window có focus sau khi load xong
     if (!mainWindow.isFocused()) {
       mainWindow.focus();
     }
+    // Log để debug
+    mainWindow.webContents.executeJavaScript(`
+      console.log('🔍 Window loaded, checking scripts...');
+      console.log('Scripts:', Array.from(document.scripts).map(s => s.src || s.textContent?.substring(0, 50)));
+      console.log('Root element:', document.getElementById('root'));
+    `).catch(err => console.error('Error executing JS:', err));
+  });
+  
+  // Log khi có lỗi load
+  mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
+    console.error('❌ Failed to load:', errorCode, errorDescription, validatedURL);
+  });
+  
+  // Log console messages từ renderer
+  mainWindow.webContents.on('console-message', (event, level, message, line, sourceId) => {
+    console.log(`[Renderer ${level}]:`, message);
   });
 
   // Xử lý khi window nhận focus
@@ -160,7 +249,25 @@ function createWindow() {
       mainWindow.webContents.openDevTools();
     }
   } else {
-    mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
+    // Trong production, load file từ app.asar/dist
+    const indexPath = getResourcePath('index.html');
+    console.log('Loading index.html from:', indexPath);
+    console.log('App path:', app.getAppPath());
+    console.log('Resources path:', process.resourcesPath);
+    
+    mainWindow.loadFile(indexPath).catch((error) => {
+      console.error('Lỗi load file:', error);
+      // Fallback: thử load trực tiếp từ app path
+      const fallbackPath = path.join(app.getAppPath(), 'dist', 'index.html');
+      console.log('Thử fallback path:', fallbackPath);
+      mainWindow.loadFile(fallbackPath).catch((err) => {
+        console.error('Lỗi load fallback:', err);
+        // Last resort: thử load từ __dirname
+        const lastResort = path.join(__dirname, '../dist/index.html');
+        console.log('Thử last resort path:', lastResort);
+        mainWindow.loadFile(lastResort);
+      });
+    });
   }
 }
 
