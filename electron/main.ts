@@ -99,7 +99,7 @@ function createWindow() {
       // Đảm bảo input hoạt động tốt
       backgroundThrottling: false,
     },
-    icon: path.join(__dirname, '../assets/icon.png'),
+    icon: path.join(__dirname, '../icon.ico'),
     titleBarStyle: 'default',
     frame: true,
     // Đảm bảo window có thể nhận focus
