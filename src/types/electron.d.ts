@@ -8,7 +8,7 @@ export interface ElectronAPI {
     updateInfo?: any;
     message?: string;
   }>;
-  getAppVersion: () => string;
+  getAppVersion: () => Promise<string>;
 }
 
 declare global {

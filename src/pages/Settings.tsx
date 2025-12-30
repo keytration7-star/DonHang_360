@@ -25,7 +25,13 @@ const Settings = () => {
     loadStorageInfo();
     // Lấy version từ Electron API nếu có
     if (window.electronAPI) {
-      setAppVersion(window.electronAPI.getAppVersion());
+      // Gọi async để lấy version mới nhất từ main process
+      window.electronAPI.getAppVersion().then((version: string) => {
+        setAppVersion(version);
+      }).catch(() => {
+        // Fallback nếu không lấy được
+        setAppVersion(window.electronAPI?.version || '1.0.1');
+      });
     }
   }, []);
 

@@ -43,7 +43,10 @@ function getIconPath(): string {
 let autoUpdater: any = null;
 
 function initAutoUpdater() {
-  if (isDev) return;
+  if (isDev) {
+    console.log('⚠️ Auto-updater bị tắt trong development mode');
+    return;
+  }
   
   try {
     // Sử dụng require cho CommonJS module (sẽ được build thành require trong output)
@@ -51,21 +54,37 @@ function initAutoUpdater() {
     const electronUpdater = require('electron-updater');
     autoUpdater = electronUpdater.autoUpdater;
     
-    // Cấu hình provider GitHub
-    // @ts-ignore
-    autoUpdater.setFeedURL({
-      provider: 'github',
-      owner: 'keytration7-star',
-      repo: 'DonHang_360',
-    });
+    console.log('✅ Electron-updater đã được load');
+    
+    // Cấu hình provider GitHub - PHẢI setFeedURL để auto-updater hoạt động đúng
+    // electron-builder sẽ tự động inject config khi build, nhưng trong runtime vẫn cần setFeedURL
+    try {
+      // @ts-ignore
+      autoUpdater.setFeedURL({
+        provider: 'github',
+        owner: 'keytration7-star',
+        repo: 'DonHang_360',
+      });
+      console.log('✅ Đã cấu hình GitHub feed URL');
+    } catch (feedError) {
+      console.warn('⚠️ Không thể setFeedURL, thử dùng auto-detect:', feedError);
+      // Nếu setFeedURL không hoạt động, electron-updater sẽ tự động detect từ package.json
+    }
     
     // Cấu hình auto-updater
     autoUpdater.setAutoDownload(false);
     autoUpdater.setAutoInstallOnAppQuit(true);
     
+    // Log để debug
+    console.log('📦 Auto-updater config:');
+    console.log('  - Owner: keytration7-star');
+    console.log('  - Repo: DonHang_360');
+    console.log('  - Current version:', app.getVersion());
+    console.log('  - Feed URL đã được set');
+    
     setupAutoUpdater();
   } catch (error) {
-    console.error('Lỗi import electron-updater:', error);
+    console.error('❌ Lỗi import electron-updater:', error);
   }
 }
 
@@ -110,11 +129,28 @@ function setupAutoUpdater() {
   });
 
   autoUpdater.on('update-not-available', (info: any) => {
-    console.log('Đã có phiên bản mới nhất:', info.version);
+    const currentVersion = app.getVersion();
+    console.log('✅ Không có cập nhật mới');
+    console.log('  - Version hiện tại (từ app.getVersion()):', currentVersion);
+    console.log('  - app.getVersion() đọc từ package.json đã được build vào app');
+    console.log('  - electron-updater đã so sánh với GitHub Releases');
+    console.log('  - Không tìm thấy version nào mới hơn');
+    console.log('  - Info:', JSON.stringify(info, null, 2));
   });
 
   autoUpdater.on('error', (err: Error) => {
-    console.error('Lỗi auto-updater:', err);
+    console.error('❌ Lỗi auto-updater:', err);
+    console.error('Chi tiết lỗi:', err.message);
+    // Log thêm thông tin để debug
+    if (err.message) {
+      console.error('Error message:', err.message);
+      if (err.message.includes('404')) {
+        console.error('⚠️ Không tìm thấy release trên GitHub. Kiểm tra:');
+        console.error('  1. Release đã được tạo trên GitHub chưa?');
+        console.error('  2. Tag version có đúng không?');
+        console.error('  3. File installer đã được upload chưa?');
+      }
+    }
   });
 
   autoUpdater.on('download-progress', (progressObj: any) => {
@@ -142,22 +178,72 @@ function setupAutoUpdater() {
 // Khởi tạo auto-updater
 initAutoUpdater();
 
+// IPC handler để lấy app version (đáng tin cậy hơn)
+ipcMain.handle('get-app-version', () => {
+  // app.getVersion() tự động đọc từ package.json khi build
+  return app.getVersion();
+});
+
+// IPC handler để lấy app name
+ipcMain.handle('get-app-name', () => {
+  return app.getName();
+});
+
 // IPC handler để check update từ renderer
 ipcMain.handle('check-for-updates', async () => {
   if (!autoUpdater || isDev) {
     return { error: 'Auto-updater không khả dụng trong development mode' };
   }
   try {
+    const currentVersion = app.getVersion();
+    console.log('🔍 Bắt đầu kiểm tra cập nhật từ renderer...');
+    console.log('  - Current version (từ app.getVersion()):', currentVersion);
+    console.log('  - app.getVersion() đọc từ package.json khi build');
+    console.log('  - electron-updater sẽ so sánh version này với GitHub Releases');
+    
     const result = await autoUpdater.checkForUpdates();
-    return { 
-      success: true, 
-      updateInfo: result?.updateInfo || null,
-      message: 'Đang kiểm tra cập nhật...'
-    };
+    console.log('📦 Kết quả checkForUpdates:', JSON.stringify(result, null, 2));
+    
+    if (result?.updateInfo) {
+      const newVersion = result.updateInfo.version;
+      console.log('✅ Tìm thấy cập nhật:');
+      console.log('  - Version hiện tại:', currentVersion);
+      console.log('  - Version mới:', newVersion);
+      return { 
+        success: true, 
+        updateInfo: result.updateInfo,
+        message: `Có bản cập nhật mới: v${newVersion}`
+      };
+    } else {
+      console.log('ℹ️ Không có cập nhật mới');
+      console.log('  - Version hiện tại:', currentVersion);
+      console.log('  - Có thể:');
+      console.log('    1. Không có release mới hơn trên GitHub');
+      console.log('    2. Release chưa được publish');
+      console.log('    3. Version trên GitHub <= version hiện tại');
+      return { 
+        success: true, 
+        updateInfo: null,
+        message: 'Bạn đang sử dụng phiên bản mới nhất'
+      };
+    }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Lỗi không xác định';
-    // Ẩn các lỗi 404 hoặc network không quan trọng
-    if (errorMessage.includes('404') || errorMessage.includes('ENOTFOUND')) {
+    console.error('❌ Lỗi khi checkForUpdates:', error);
+    console.error('  - Error message:', errorMessage);
+    console.error('  - Error stack:', error instanceof Error ? error.stack : 'N/A');
+    
+    // Xử lý các lỗi cụ thể
+    if (errorMessage.includes('404') || errorMessage.includes('Not Found')) {
+      console.error('⚠️ Release không tồn tại trên GitHub');
+      console.error('  - Có thể release chưa được publish');
+      console.error('  - Hoặc tag chưa được tạo release');
+      return { 
+        error: 'Không tìm thấy release trên GitHub. Release có thể chưa được publish.',
+        success: false 
+      };
+    }
+    if (errorMessage.includes('ENOTFOUND') || errorMessage.includes('network')) {
       return { 
         error: 'Không tìm thấy bản cập nhật. Vui lòng kiểm tra kết nối mạng.',
         success: false 

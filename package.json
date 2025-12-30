@@ -1,6 +1,6 @@
 {
   "name": "donhang-360",
-  "version": "1.0.3",
+  "version": "1.0.7",
   "description": "Ứng dụng quản lý đơn hàng hiện đại",
   "main": "dist-electron/main.cjs",
   "type": "module",
@@ -63,6 +63,7 @@
       "dist/**/*",
       "dist-electron/**/*",
       "!dist-electron/main.js",
+      "package.json",
       "icon.ico"
     ],
     "extraResources": [
@@ -98,7 +99,8 @@
       "owner": "keytration7-star",
       "repo": "DonHang_360",
       "private": false,
-      "releaseType": "release"
+      "releaseType": "release",
+      "channel": "latest"
     }
   }
 }
