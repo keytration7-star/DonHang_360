@@ -83,6 +83,13 @@ if [ -z "$GH_TOKEN" ]; then
         # Kiểm tra xem có đọc được không
         if [ -n "$GH_TOKEN" ]; then
             echo "[SUCCESS] Đã đọc token từ .env.github"
+            # Hiển thị một phần token để verify (4 ký tự đầu + ...)
+            TOKEN_PREVIEW="${GH_TOKEN:0:4}...${GH_TOKEN: -4}"
+            echo "[DEBUG] Token preview: ${TOKEN_PREVIEW}"
+            # Kiểm tra format token (GitHub PAT thường bắt đầu bằng ghp_ hoặc github_pat_)
+            if [[ ! "$GH_TOKEN" =~ ^(ghp_|github_pat_) ]]; then
+                echo "[WARNING] Token không có format chuẩn của GitHub PAT (thường bắt đầu bằng 'ghp_' hoặc 'github_pat_')"
+            fi
         fi
     fi
     if [ -z "$GH_TOKEN" ]; then
@@ -174,9 +181,11 @@ if ! git diff --quiet HEAD; then
                     OWNER="${BASH_REMATCH[1]}"
                     REPO="${BASH_REMATCH[2]}"
                     # Push với token trong URL: oauth2:TOKEN
+                    # URL encode token để tránh lỗi với ký tự đặc biệt
                     PUSH_URL="https://oauth2:${GH_TOKEN}@github.com/${OWNER}/${REPO}.git"
                     echo "[INFO] Đang push với token..."
-                    git push "$PUSH_URL" main
+                    echo "[DEBUG] Push URL: https://oauth2:***@github.com/${OWNER}/${REPO}.git"
+                    git push "$PUSH_URL" main 2>&1
                 else
                     # Fallback: replace URL trực tiếp, thêm oauth2:token@
                     PUSH_URL=$(echo "$REMOTE_URL" | sed "s|https://|https://oauth2:${GH_TOKEN}@|")
@@ -196,10 +205,18 @@ if ! git diff --quiet HEAD; then
             echo ""
         else
             echo "[ERROR] Lỗi khi push code"
-            echo "[INFO] Kiểm tra:"
-            echo "   - Kết nối mạng có ổn không"
-            echo "   - Quyền truy cập GitHub có đúng không"
-            echo "   - Code đã được commit chưa"
+            echo ""
+            echo "[INFO] Nguyên nhân có thể:"
+            echo "   1. Token GitHub không hợp lệ hoặc đã hết hạn"
+            echo "   2. Token không có quyền 'repo' (cần quyền này để push)"
+            echo "   3. Token có ký tự đặc biệt gây lỗi"
+            echo ""
+            echo "[INFO] Cách khắc phục:"
+            echo "   1. Tạo token mới tại: https://github.com/settings/tokens"
+            echo "   2. Chọn quyền 'repo' (Full control of private repositories)"
+            echo "   3. Copy token và lưu vào file .env.github:"
+            echo "      echo 'ghp_your_new_token_here' > .env.github"
+            echo "   4. Chạy lại script"
             echo ""
             echo "[WARNING] Tiếp tục với các bước build và publish..."
             echo ""
@@ -236,7 +253,8 @@ if [ $REMOTE_TAG_EXISTS -ne 0 ]; then
                 # Push tag với token trong URL
                 PUSH_URL="https://oauth2:${GH_TOKEN}@github.com/${OWNER}/${REPO}.git"
                 echo "[INFO] Đang push tag với token..."
-                git push "$PUSH_URL" "v$VERSION"
+                echo "[DEBUG] Push URL: https://oauth2:***@github.com/${OWNER}/${REPO}.git"
+                git push "$PUSH_URL" "v$VERSION" 2>&1
             else
                 # Fallback: replace URL trực tiếp, thêm oauth2:token@
                 PUSH_URL=$(echo "$REMOTE_URL" | sed "s|https://|https://oauth2:${GH_TOKEN}@|")

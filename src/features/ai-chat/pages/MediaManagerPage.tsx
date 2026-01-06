@@ -413,7 +413,7 @@ const MediaManagerPage = () => {
               {/* Colors */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Màu sắc (cho tìm kiếm "áo xanh" -> gửi ảnh xanh)
+                  Màu sắc (cho tìm kiếm "áo xanh" → gửi ảnh xanh)
                 </label>
                 <div className="flex gap-2 mb-2">
                   <input
