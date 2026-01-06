@@ -1,4 +1,4 @@
-import { Order } from '../types/order';
+import { Order } from '../../shared/types/order';
 
 const STORAGE_KEY = 'donhang360_orders';
 

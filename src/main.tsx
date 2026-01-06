@@ -1,56 +1,83 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
-import './index.css';
-import ErrorBoundary from './components/ErrorBoundary';
-
-// Debug: Log khi app khởi động
-console.log('🚀 App đang khởi động...');
-console.log('Environment:', import.meta.env.MODE);
-console.log('Root element:', document.getElementById('root'));
+import './index.css';;
+import ErrorBoundary from './shared/components/ErrorBoundary';
 
 // Đảm bảo input hoạt động đúng trong Electron
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('📄 DOM đã load xong');
+  
   // Đảm bảo window có focus khi click vào input
+  document.addEventListener('mousedown', (e) => {
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') {
+      // Đảm bảo input nhận focus ngay lập tức
+      (target as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement).focus();
+    }
+  }, true);
+  
+  // Xử lý khi click vào input (sau mousedown)
   document.addEventListener('click', (e) => {
     const target = e.target as HTMLElement;
     if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') {
       // Đảm bảo input nhận focus
       setTimeout(() => {
         (target as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement).focus();
-      }, 0);
+        // Đảm bảo có thể nhập text
+        (target as HTMLInputElement | HTMLTextAreaElement).select?.();
+      }, 10);
     }
   }, true);
 
   // Xử lý khi window nhận focus
   window.addEventListener('focus', () => {
     // Đảm bảo input đang active vẫn có focus
-    const activeElement = document.activeElement;
-    if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA' || activeElement.tagName === 'SELECT')) {
-      (activeElement as HTMLElement).focus();
-    }
+    setTimeout(() => {
+      const activeEl = document.activeElement;
+      if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'SELECT')) {
+        (activeEl as HTMLElement).focus();
+      }
+    }, 10);
   });
+  
+  // Xử lý khi keydown - đảm bảo input có thể nhận keyboard input
+  document.addEventListener('keydown', (e) => {
+    const activeEl = document.activeElement;
+    if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
+      // Cho phép tất cả keyboard input
+      e.stopPropagation();
+    }
+  }, true);
 });
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
-  console.error('❌ Không tìm thấy root element!');
+  // Root element not found
   throw new Error('Root element không tồn tại');
 }
 
-console.log('🎨 Đang render React app...');
 try {
-  ReactDOM.createRoot(rootElement).render(
-    <React.StrictMode>
-      <ErrorBoundary>
-        <App />
-      </ErrorBoundary>
-    </React.StrictMode>
+  // Tắt StrictMode trong production để tránh lỗi React #300
+  // StrictMode có thể gây ra double rendering và lỗi trong production build
+  const isDevelopment = import.meta.env.MODE === 'development';
+  
+  const appContent = (
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
   );
-  console.log('✅ React app đã được render');
+  
+  if (isDevelopment) {
+    ReactDOM.createRoot(rootElement).render(
+      <React.StrictMode>
+        {appContent}
+      </React.StrictMode>
+    );
+  } else {
+    ReactDOM.createRoot(rootElement).render(appContent);
+  }
 } catch (error) {
-  console.error('❌ Lỗi khi render React app:', error);
+  // Error rendering app
   rootElement.innerHTML = `
     <div style="padding: 20px; font-family: Arial;">
       <h1 style="color: red;">Lỗi khởi động ứng dụng</h1>

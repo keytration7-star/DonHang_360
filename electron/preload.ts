@@ -21,6 +21,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   appName: appName,
   // Expose IPC để gọi check update từ renderer
   checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
+  downloadUpdate: () => ipcRenderer.invoke('download-update'),
+  installUpdate: () => ipcRenderer.invoke('install-update'),
   getAppVersion: async () => {
     // Lấy version mới nhất từ main process mỗi lần gọi
     try {
@@ -48,5 +50,27 @@ contextBridge.exposeInMainWorld('electronAPI', {
     } catch (error) {
       return appName;
     }
+  },
+  onUpdateAvailable: (callback: (info: any) => void) => {
+    ipcRenderer.on('update-available', (_, info) => callback(info));
+  },
+  onUpdateDownloadProgress: (callback: (progress: any) => void) => {
+    ipcRenderer.on('update-download-progress', (_, progress) => callback(progress));
+  },
+  onUpdateDownloaded: (callback: (info: any) => void) => {
+    ipcRenderer.on('update-downloaded', (_, info) => callback(info));
+  },
+  onUpdateDownloadError: (callback: (error: any) => void) => {
+    ipcRenderer.on('update-download-error', (_, error) => callback(error));
+  },
+  onUpdateError: (callback: (error: any) => void) => {
+    ipcRenderer.on('update-error', (_, error) => callback(error));
+  },
+  removeUpdateListeners: () => {
+    ipcRenderer.removeAllListeners('update-available');
+    ipcRenderer.removeAllListeners('update-download-progress');
+    ipcRenderer.removeAllListeners('update-downloaded');
+    ipcRenderer.removeAllListeners('update-download-error');
+    ipcRenderer.removeAllListeners('update-error');
   },
 });

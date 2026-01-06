@@ -22,24 +22,38 @@
     <div id="root"></div>
     <!-- Inline script để debug ngay lập tức -->
     <script>
-      console.log('🔍 HTML đã load - inline script chạy');
-      console.log('Location:', window.location.href);
-      console.log('Protocol:', window.location.protocol);
-      console.log('Root element:', document.getElementById('root'));
+      // Áp dụng theme ngay khi page load để tránh flash of light mode
+      (function() {
+        const savedTheme = localStorage.getItem('app_theme');
+        if (savedTheme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      })();
+      
+      // Thêm hàm debug vào window để có thể gọi từ console
+      window.debugTheme = function() {
+        console.log('🔍 === THEME DEBUG ===');
+        console.log('localStorage app_theme:', localStorage.getItem('app_theme'));
+        console.log('HTML classes:', document.documentElement.className);
+        console.log('Has dark class?', document.documentElement.classList.contains('dark'));
+        console.log('Body background:', window.getComputedStyle(document.body).backgroundColor);
+        console.log('Body color:', window.getComputedStyle(document.body).color);
+        console.log('Root div background:', window.getComputedStyle(document.getElementById('root')).backgroundColor);
+        return {
+          localStorage: localStorage.getItem('app_theme'),
+          htmlClasses: document.documentElement.className,
+          hasDarkClass: document.documentElement.classList.contains('dark'),
+          bodyBg: window.getComputedStyle(document.body).backgroundColor,
+          bodyColor: window.getComputedStyle(document.body).color
+        };
+      };
       
       // Kiểm tra xem script module có load không
       window.addEventListener('error', function(e) {
         console.error('❌ Script error:', e.message, e.filename, e.lineno);
       });
-      
-      // Log khi DOM ready
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function() {
-          console.log('✅ DOM Content Loaded');
-        });
-      } else {
-        console.log('✅ DOM đã sẵn sàng');
-      }
     </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>

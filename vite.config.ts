@@ -19,6 +19,10 @@ export default defineConfig({
   },
   base: './',
   build: {
+    // Bật minification cho production (đã sửa lỗi React #300)
+    minify: 'esbuild',
+    // Tắt source maps trong production để giảm kích thước file
+    sourcemap: false,
     rollupOptions: {
       output: {
         entryFileNames: `assets/[name]-[hash].js`,

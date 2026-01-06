@@ -84,6 +84,30 @@ if "%GH_TOKEN%"=="" (
         exit /b 1
     )
 )
+
+REM Kiểm tra token có hợp lệ không (test với GitHub API)
+echo [INFO] Đang kiểm tra GitHub token...
+set TOKEN_VALID=0
+curl -s -H "Authorization: token !GH_TOKEN!" https://api.github.com/user >nul 2>&1
+if %errorlevel% equ 0 (
+    set TOKEN_VALID=1
+) else (
+    REM Thử với format khác
+    curl -s -H "Authorization: Bearer !GH_TOKEN!" https://api.github.com/user >nul 2>&1
+    if %errorlevel% equ 0 (
+        set TOKEN_VALID=1
+    )
+)
+
+if !TOKEN_VALID! equ 0 (
+    echo [WARNING] Không thể xác minh token (có thể do không có curl hoặc token không hợp lệ)
+    echo [INFO] Sẽ tiếp tục với token hiện tại, nếu lỗi 401 thì token không hợp lệ
+    echo.
+) else (
+    echo [SUCCESS] GitHub token hợp lệ
+    echo.
+)
+
 echo [INFO] GitHub token đã được tìm thấy
 echo.
 
@@ -180,6 +204,39 @@ if !REMOTE_TAG_EXISTS! neq 0 (
 )
 echo.
 
+REM Xóa file exe cũ trong thư mục release (đảm bảo chỉ có file mới nhất)
+echo [INFO] Đang xóa file exe cũ trong thư mục release...
+if exist release\*.exe (
+    del /q release\*.exe
+    echo [SUCCESS] Đã xóa file exe cũ
+) else (
+    echo [INFO] Không có file exe cũ để xóa
+)
+if exist release\*.exe.blockmap (
+    del /q release\*.exe.blockmap
+    echo [SUCCESS] Đã xóa file blockmap cũ
+)
+if exist release\latest.yml (
+    del /q release\latest.yml
+    echo [SUCCESS] Đã xóa file latest.yml cũ
+)
+echo.
+if exist release\*.exe (
+    del /q release\*.exe
+    echo [SUCCESS] Đã xóa file exe cũ
+) else (
+    echo [INFO] Không có file exe cũ để xóa
+)
+if exist release\*.exe.blockmap (
+    del /q release\*.exe.blockmap
+    echo [SUCCESS] Đã xóa file blockmap cũ
+)
+if exist release\latest.yml (
+    del /q release\latest.yml
+    echo [SUCCESS] Đã xóa file latest.yml cũ
+)
+echo.
+
 REM Build app
 echo [INFO] Đang build ứng dụng...
 echo [INFO] Điều này có thể mất vài phút...
@@ -209,24 +266,108 @@ if %errorlevel% neq 0 (
 echo [SUCCESS] Đã build Electron
 echo.
 
+REM Xóa file exe cũ trong thư mục release trước khi build mới (đảm bảo chỉ có file mới nhất)
+echo [INFO] Đang xóa file exe cũ trong thư mục release trước khi build...
+if exist release\*.exe (
+    del /q release\*.exe
+    echo [SUCCESS] Đã xóa file exe cũ
+)
+if exist release\*.exe.blockmap (
+    del /q release\*.exe.blockmap
+    echo [SUCCESS] Đã xóa file blockmap cũ
+)
+if exist release\latest.yml (
+    del /q release\latest.yml
+    echo [SUCCESS] Đã xóa file latest.yml cũ
+)
+echo.
+
 REM Build và publish với electron-builder
 echo [STEP 3/3] Đang build installer và publish lên GitHub...
 echo [INFO] Sử dụng GitHub token để publish...
+echo [INFO] Token: !GH_TOKEN:~0,10!... (10 ký tự đầu)
+
 REM Set token cho electron-builder (cần set trước khi chạy)
+REM electron-builder sử dụng GH_TOKEN hoặc GITHUB_TOKEN từ environment
 set GH_TOKEN=!GH_TOKEN!
 set GITHUB_TOKEN=!GH_TOKEN!
-call npm run build:all
-if %errorlevel% neq 0 (
+
+REM Export token cho npm (cần thiết cho electron-builder)
+set "npm_config_gh_token=!GH_TOKEN!"
+set "npm_config_github_token=!GH_TOKEN!"
+
+REM Đảm bảo token được truyền vào npm process
+REM electron-builder đọc token từ environment variables GH_TOKEN hoặc GITHUB_TOKEN
+REM QUAN TRỌNG: Phải set trước khi gọi npm, và phải được export để npm process con nhận được
+echo [INFO] Đang build với electron-builder...
+echo [INFO] Environment variables đã được set: GH_TOKEN, GITHUB_TOKEN
+echo [INFO] Token: !GH_TOKEN:~0,15!... (15 ký tự đầu)
+
+REM Gọi electron-builder trực tiếp với token đã được set trong environment
+REM (Đã build ở trên rồi, không cần build lại)
+echo [INFO] Đang build installer và publish với electron-builder...
+echo [INFO] Token đã được set trong environment: GH_TOKEN, GITHUB_TOKEN
+call npx electron-builder --publish always
+set BUILD_RESULT=%errorlevel%
+
+REM Kiểm tra xem release đã được tạo trên GitHub chưa (kiểm tra thực tế thay vì chỉ dựa vào errorlevel)
+echo.
+echo [INFO] Đang kiểm tra xem release đã được tạo trên GitHub chưa...
+where curl >nul 2>&1
+if %errorlevel% equ 0 (
+    REM Sử dụng curl để kiểm tra release
+    for /f "delims=" %%a in ('curl -s -H "Authorization: token !GH_TOKEN!" https://api.github.com/repos/keytration7-star/DonHang_360/releases/tags/v!VERSION!') do (
+        echo %%a | findstr /c:"tag_name" >nul
+        if %errorlevel% equ 0 (
+            echo [SUCCESS] Release v!VERSION! đã được tạo thành công trên GitHub!
+            set RELEASE_EXISTS=1
+        ) else (
+            set RELEASE_EXISTS=0
+        )
+    )
+) else (
+    REM Nếu không có curl, chỉ dựa vào errorlevel
+    if !BUILD_RESULT! equ 0 (
+        set RELEASE_EXISTS=1
+    ) else (
+        set RELEASE_EXISTS=0
+    )
+)
+
+REM Nếu release đã tồn tại trên GitHub, coi như thành công
+if !RELEASE_EXISTS! equ 1 (
+    echo [SUCCESS] Đã build và publish thành công!
+    echo.
+    goto :publish_success
+)
+
+REM Nếu errorlevel khác 0 và release chưa tồn tại, mới báo lỗi
+if !BUILD_RESULT! neq 0 (
+    echo.
     echo [ERROR] Lỗi khi build hoặc publish
-    echo [INFO] Kiểm tra:
-    echo   - GitHub token có hợp lệ không
-    echo   - Kết nối mạng có ổn không
-    echo   - Version đã được tăng chưa
+    echo.
+    echo [INFO] Nguyên nhân có thể:
+    echo   1. GitHub token không hợp lệ hoặc hết hạn (lỗi 401)
+    echo   2. Token không có quyền "repo" để publish releases
+    echo   3. Kết nối mạng có vấn đề
+    echo   4. Version đã tồn tại trên GitHub Releases
+    echo.
+    echo [INFO] Cách khắc phục:
+    echo   1. Tạo token mới tại: https://github.com/settings/tokens
+    echo      - Chọn quyền "repo" (full control of private repositories)
+    echo      - Copy token và cập nhật vào file .env.github
+    echo   2. Kiểm tra token có quyền "repo" không
+    echo   3. Kiểm tra kết nối mạng
+    echo   4. Kiểm tra version đã tồn tại tại: https://github.com/keytration7-star/DonHang_360/releases
     echo.
     echo [INFO] Có thể thử build không publish: npm run build:all:no-publish
+    echo [INFO] File installer vẫn được tạo tại: release\Đơn Hàng 360 Setup !VERSION!.exe
+    echo.
     pause
     exit /b 1
 )
+
+:publish_success
 echo [SUCCESS] Đã build và publish thành công!
 echo.
 

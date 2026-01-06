@@ -1,6 +1,6 @@
 {
   "name": "donhang-360",
-  "version": "1.0.7",
+  "version": "1.4.9",
   "description": "Ứng dụng quản lý đơn hàng hiện đại",
   "main": "dist-electron/main.cjs",
   "type": "module",
@@ -11,6 +11,7 @@
     "build:electron:preload": "vite build -c vite.electron.preload.config.ts",
     "build:electron:main": "vite build -c vite.electron.main.config.ts",
     "build:all": "npm run build && npm run build:electron && electron-builder --publish always",
+    "build:all:with-token": "npm run build && npm run build:electron && cross-env GH_TOKEN=%GH_TOKEN% GITHUB_TOKEN=%GH_TOKEN% electron-builder --publish always",
     "build:all:no-publish": "npm run build && npm run build:electron && electron-builder --publish never",
     "preview": "vite preview",
     "electron:dev": "npm run build:electron && concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
@@ -41,6 +42,7 @@
   },
   "dependencies": {
     "@tanstack/react-query": "^5.14.2",
+    "@types/react-window": "^1.8.8",
     "axios": "^1.6.2",
     "date-fns": "^3.0.6",
     "electron-updater": "^6.6.2",
@@ -49,6 +51,7 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.21.1",
+    "react-window": "^2.2.3",
     "recharts": "^2.10.3",
     "xlsx": "^0.18.5",
     "zustand": "^4.4.7"
