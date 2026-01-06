@@ -72,9 +72,9 @@ export function pancakeOrderToOrder(pancakeOrder: PancakeOrder): Order {
                   pancakeOrder.inserted_at || 
                   now;
 
-  const pickupDate = pancakeOrder.pickup_date || 
-                    pancakeOrder.picked_up_at || 
-                    pancakeOrder.time_assign_seller;
+  const pickupDateRaw = pancakeOrder.pickup_date || 
+                        pancakeOrder.picked_up_at || 
+                        pancakeOrder.time_assign_seller;
 
   // Extract order status from partner
   const orderStatus = pancakeOrder.partner?.delivery_status_text || 
@@ -118,7 +118,7 @@ export function pancakeOrderToOrder(pancakeOrder: PancakeOrder): Order {
     trackingNumber: String(trackingNumber),
     orderStatus,
     sendDate,
-    pickupDate,
+    pickupDate: pickupDateRaw ? String(pickupDateRaw) : undefined,
     status,
     customerName,
     customerPhone,
@@ -127,7 +127,6 @@ export function pancakeOrderToOrder(pancakeOrder: PancakeOrder): Order {
     actualCod,
     shippingFee,
     goodsContent,
-    carrier,
     source: 'sent',
     wasSent: true,
     createdAt: pancakeOrder.created_at || now,

@@ -217,7 +217,7 @@ class ConversationManager {
     const memory = await this.getConversationMemory(conversationId);
     const messages: Array<{ role: 'user' | 'assistant'; content: string }> = [];
 
-    // Add summarized context as system message
+    // Add summarized context như assistant message (để không vi phạm type)
     if (memory.summarizedContext) {
       messages.push({
         role: 'assistant',
@@ -225,10 +225,10 @@ class ConversationManager {
       });
     }
 
-    // Add immediate context
+    // Add immediate context (bỏ qua system, chỉ giữ user/assistant)
     memory.immediateContext.forEach(msg => {
       messages.push({
-        role: msg.role,
+        role: msg.role === 'user' ? 'user' : 'assistant',
         content: msg.content,
       });
     });

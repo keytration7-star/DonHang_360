@@ -29,7 +29,7 @@ class PersonalityEngine {
     const priorities = this.analyzePriorities(allText);
 
     // Analyze traits
-    const traits = this.analyzeTraits(allText, userMessages);
+    const traits = this.analyzeTraits(allText);
 
     // Calculate confidence (càng nhiều messages, confidence càng cao)
     const confidence = Math.min(1, userMessages.length / 10);
@@ -67,8 +67,7 @@ class PersonalityEngine {
 
     // Update tone
     const newTone = this.analyzeTone(allText);
-    const toneWeight = 0.4;
-    const updatedTone = this.mergeTone(currentPersonality.tone, newTone, toneWeight);
+    const updatedTone = this.mergeTone(currentPersonality.tone, newTone);
 
     // Update priorities
     const newPriorities = this.analyzePriorities(allText);
@@ -80,7 +79,7 @@ class PersonalityEngine {
     };
 
     // Update traits
-    const newTraits = this.analyzeTraits(allText, [newMessage]);
+    const newTraits = this.analyzeTraits(allText);
     const traits = {
       decisive: currentPersonality.traits.decisive * 0.7 + newTraits.decisive * 0.3,
       detailOriented: currentPersonality.traits.detailOriented * 0.7 + newTraits.detailOriented * 0.3,
@@ -172,7 +171,7 @@ class PersonalityEngine {
     };
   }
 
-  private analyzeTraits(text: string, messages: Message[]): CustomerPersonality['traits'] {
+  private analyzeTraits(text: string): CustomerPersonality['traits'] {
     // Decisive: quyết đoán, đưa ra quyết định nhanh
     const decisiveKeywords = ['mua', 'đặt', 'ok', 'được', 'chốt', 'xác nhận'];
     const decisiveCount = this.countKeywords(text, decisiveKeywords);
@@ -220,7 +219,10 @@ class PersonalityEngine {
     return 'friendly';
   }
 
-  private mergeTone(current: string, newTone: string, weight: number): CustomerPersonality['tone'] {
+  private mergeTone(
+    current: CustomerPersonality['tone'],
+    newTone: CustomerPersonality['tone'],
+  ): CustomerPersonality['tone'] {
     // Simple: nếu newTone khác neutral, ưu tiên newTone
     if (newTone !== 'neutral' && current === 'neutral') {
       return newTone as CustomerPersonality['tone'];

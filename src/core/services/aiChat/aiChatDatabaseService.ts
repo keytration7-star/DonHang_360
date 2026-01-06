@@ -173,9 +173,16 @@ class AIChatDatabaseService {
 
   // ==================== Conversations ====================
 
-  async createConversation(conversation: Conversation): Promise<Conversation> {
-    await this.saveConversation(conversation);
-    return conversation;
+  async createConversation(
+    conversation: Omit<Conversation, 'id'> & { id?: string }
+  ): Promise<Conversation> {
+    const id = conversation.id || `conv_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const fullConversation: Conversation = {
+      ...conversation,
+      id,
+    };
+    await this.saveConversation(fullConversation);
+    return fullConversation;
   }
 
   async saveConversation(conversation: Conversation): Promise<void> {

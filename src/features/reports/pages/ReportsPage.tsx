@@ -222,7 +222,7 @@ const Reports = () => {
       const shopOrderIds = new Set(allShopOrders.map(o => o.id || o.code));
       const shopOrdersData = orders.filter(o => {
         const rawData = o.rawData as PancakeOrder | undefined;
-        const orderId = rawData?.id || rawData?.code;
+        const orderId: string = (rawData?.id || rawData?.code || '') as string;
         return shopOrderIds.has(orderId);
       });
 

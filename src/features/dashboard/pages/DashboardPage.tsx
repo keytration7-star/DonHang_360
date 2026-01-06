@@ -81,8 +81,9 @@ const Dashboard = () => {
     };
     
     const handleIncrementalUpdate = (event: Event) => {
-      const { detail } = event;
-      // Incremental update received
+      const customEvent = event as CustomEvent<any>;
+      const { detail } = customEvent;
+      // Incremental update received (detail chứa thông tin update)
     };
     
     window.addEventListener('apiOrdersUpdated', handleDataUpdated);

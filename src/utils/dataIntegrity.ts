@@ -2,7 +2,7 @@
  * Utility để kiểm tra và đảm bảo tính toàn vẹn dữ liệu
  */
 
-import { Order, OrderStatus } from '../../shared/types/order';
+import { Order, OrderStatus } from '../shared/types/order';
 import { logger } from './logger';
 import { calculateOrderStats } from './orderUtils';
 import { getWarningOrders } from './orderUtils';

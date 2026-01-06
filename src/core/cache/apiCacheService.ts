@@ -7,6 +7,7 @@
  */
 
 import { Order } from '../../shared/types/order';
+import { PancakeOrder, PancakeApiConfig } from '../../shared/types/pancakeApi';
 import { ShopOrders } from '../../core/services/multiShopApiService';
 import { logger } from '../../shared/utils/logger';
 
@@ -172,43 +173,41 @@ class ApiCacheService {
         orders = ordersRequest.result || [];
       };
 
-            shopsRequest.onsuccess = () => {
-              interface CachedShop {
-                shopId: string | number;
-                shopName: string;
-                apiConfig: unknown;
-                [key: string]: unknown;
-              }
-              shopOrders = (shopsRequest.result || []).map((shop: CachedShop) => ({
-                shopId: String(shop.shopId), // Normalize shopId khi restore từ cache
-                shopName: shop.shopName,
-                apiConfig: shop.apiConfig,
-                orders: [], // Orders sẽ được map từ orders array
-              }));
-            };
+      shopsRequest.onsuccess = () => {
+        interface CachedShop {
+          shopId: string | number;
+          shopName: string;
+          apiConfig: PancakeApiConfig | unknown;
+          [key: string]: unknown;
+        }
+        shopOrders = (shopsRequest.result || []).map((shop: CachedShop) => ({
+          shopId: String(shop.shopId), // Normalize shopId khi restore từ cache
+          shopName: shop.shopName,
+          apiConfig: shop.apiConfig as PancakeApiConfig,
+          orders: [], // Orders sẽ được map từ orders array
+        }));
+      };
 
       metadataRequest.onsuccess = () => {
         metadata = metadataRequest.result || null;
       };
 
       transaction.oncomplete = () => {
-        // Map orders vào shops (orders là Order[], không phải PancakeOrder[])
-        // ShopOrders.orders cần là PancakeOrder[], nhưng cache chỉ lưu Order[]
-        // Nên ta sẽ để orders rỗng và để component tự fetch lại từ rawData
-              shopOrders.forEach(shop => {
-                // Lấy rawData từ orders và convert lại thành PancakeOrder
-                // Normalize shopId để so sánh (string vs number)
-                const normalizedShopId = String(shop.shopId);
-                const shopOrdersData = orders
-                  .filter(o => {
-                    const rawData = o.rawData as PancakeOrder | undefined;
-                    const orderShopId = rawData?.shop_id;
-                    return orderShopId && String(orderShopId) === normalizedShopId;
-                  })
-                  .map(o => o.rawData)
-                  .filter((data): data is PancakeOrder => data !== undefined && data !== null) as PancakeOrder[];
-                shop.orders = shopOrdersData;
-              });
+        // Map orders vào shops (orders là Order[], rawData có thể là PancakeOrder)
+        shopOrders.forEach(shop => {
+          // Lấy rawData từ orders và convert lại thành PancakeOrder
+          // Normalize shopId để so sánh (string vs number)
+          const normalizedShopId = String(shop.shopId);
+          const shopOrdersData = orders
+            .filter(o => {
+              const rawData = o.rawData as PancakeOrder | undefined;
+              const orderShopId = rawData?.shop_id;
+              return orderShopId && String(orderShopId) === normalizedShopId;
+            })
+            .map(o => o.rawData as PancakeOrder | undefined)
+            .filter((data): data is PancakeOrder => data !== undefined && data !== null);
+          shop.orders = shopOrdersData;
+        });
 
         logger.log(`✅ Đã lấy ${orders.length} orders và ${shopOrders.length} shops từ cache`);
         resolve({ orders, shopOrders, metadata });

@@ -223,7 +223,7 @@ class FacebookApiService {
     // Nếu có media, gửi media trước, sau đó gửi text
     if (mediaUrls && mediaUrls.length > 0) {
       // Gửi tất cả media
-      const mediaPromises = mediaUrls.map((url, index) => {
+      const mediaPromises = mediaUrls.map((url) => {
         // Xác định loại media từ URL
         const isVideo = url.match(/\.(mp4|mov|avi|webm)$/i);
         const mediaType = isVideo ? 'video' : 'image';

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useApiOrderStore } from '../../../core/store/apiOrderStore';
-import { formatCurrency, formatDate, getOrderStatusTag } from '../../../shared/utils/orderUtils';
+import { formatCurrency, formatDate, getOrderStatusTag, getOrderStatusTagFromOrder } from '../../../shared/utils/orderUtils';
 import { logger } from '../../../shared/utils/logger';
 import { useDebounce } from '../../../shared/hooks/useDebounce';
 import { dailyProcessingService, ProcessingHistory } from '../../../core/services/dailyProcessingService';

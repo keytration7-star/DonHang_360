@@ -1,8 +1,8 @@
 import { initializeApp, getApps } from 'firebase/app';
 import { getDatabase, ref, set, get, onValue } from 'firebase/database';
-import { Order, OrderStatus } from '../../shared/types/order';
+import { Order, OrderStatus } from '../shared/types/order';
 import { retry, getUserFriendlyError } from '../utils/errorHandler';
-import { logger } from '../../shared/utils/logger';
+import { logger } from '../shared/utils/logger';
 
 function getFirebaseConfig() {
   return {

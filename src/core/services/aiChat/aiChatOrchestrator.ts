@@ -85,7 +85,7 @@ class AIChatOrchestrator {
       );
 
       // Tìm media nếu cần (dựa trên message text)
-      const mediaUrls = this.findRelevantMedia(module, messageText, parsedForm);
+      const mediaUrls = this.findRelevantMedia(module, messageText);
 
       // Gọi AI để tạo response
       const aiResponse = await aiProviderService.sendMessage(
@@ -148,8 +148,7 @@ class AIChatOrchestrator {
    */
   private findRelevantMedia(
     module: AIModule,
-    messageText: string,
-    parsedForm: ParsedForm
+    messageText: string
   ): string[] {
     try {
       const mediaItems = module.media || [];

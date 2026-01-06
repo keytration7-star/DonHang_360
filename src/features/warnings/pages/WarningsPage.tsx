@@ -928,7 +928,7 @@ const Warnings = () => {
                         )}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
-                        {formatDate(new Date(statusData.processedAt))}
+                        {formatDate(statusData.processedAt)}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
                         <div>

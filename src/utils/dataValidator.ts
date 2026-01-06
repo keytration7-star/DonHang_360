@@ -2,7 +2,7 @@
  * Utility để validate và đảm bảo tính nhất quán dữ liệu
  */
 
-import { Order, OrderStatus } from '../../shared/types/order';
+import { Order, OrderStatus } from '../shared/types/order';
 import { logger } from './logger';
 
 /**
