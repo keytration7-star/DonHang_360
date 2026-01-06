@@ -160,9 +160,32 @@ if ! git diff --quiet HEAD; then
             echo "[SUCCESS] Đã commit thành công"
         fi
         
-        # Push code lên GitHub
+        # Push code lên GitHub (sử dụng token trong URL)
         echo "[INFO] Đang push code lên GitHub..."
-        git push origin main
+        
+        # Lấy remote URL và thay thế bằng URL có token
+        REMOTE_URL=$(git remote get-url origin 2>/dev/null || echo "")
+        if [ -n "$REMOTE_URL" ]; then
+            # Nếu là HTTPS URL, thêm token vào
+            if [[ "$REMOTE_URL" == https://* ]]; then
+                # Extract owner và repo từ URL
+                if [[ "$REMOTE_URL" =~ github.com[:/]([^/]+)/([^/]+)(\.git)?$ ]]; then
+                    OWNER="${BASH_REMATCH[1]}"
+                    REPO="${BASH_REMATCH[2]%.git}"
+                    # Push với token trong URL
+                    git push "https://${GH_TOKEN}@github.com/${OWNER}/${REPO}.git" main
+                else
+                    # Fallback: push bình thường
+                    git push origin main
+                fi
+            else
+                # Nếu là SSH URL, push bình thường
+                git push origin main
+            fi
+        else
+            git push origin main
+        fi
+        
         if [ $? -eq 0 ]; then
             echo "[SUCCESS] Đã push code lên GitHub"
             echo ""
@@ -195,7 +218,30 @@ fi
 # Push tag lên GitHub (chỉ push nếu chưa tồn tại trên remote)
 if [ $REMOTE_TAG_EXISTS -ne 0 ]; then
     echo "[INFO] Đang push tag lên GitHub..."
-    git push origin "v$VERSION"
+    
+    # Lấy remote URL và thay thế bằng URL có token
+    REMOTE_URL=$(git remote get-url origin 2>/dev/null || echo "")
+    if [ -n "$REMOTE_URL" ]; then
+        # Nếu là HTTPS URL, thêm token vào
+        if [[ "$REMOTE_URL" == https://* ]]; then
+            # Extract owner và repo từ URL
+            if [[ "$REMOTE_URL" =~ github.com[:/]([^/]+)/([^/]+)(\.git)?$ ]]; then
+                OWNER="${BASH_REMATCH[1]}"
+                REPO="${BASH_REMATCH[2]%.git}"
+                # Push tag với token trong URL
+                git push "https://${GH_TOKEN}@github.com/${OWNER}/${REPO}.git" "v$VERSION"
+            else
+                # Fallback: push bình thường
+                git push origin "v$VERSION"
+            fi
+        else
+            # Nếu là SSH URL, push bình thường
+            git push origin "v$VERSION"
+        fi
+    else
+        git push origin "v$VERSION"
+    fi
+    
     if [ $? -ne 0 ]; then
         echo "[WARNING] Không thể push tag (có thể đã tồn tại trên remote)"
     else
