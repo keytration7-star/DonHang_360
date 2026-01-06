@@ -166,19 +166,20 @@ if ! git diff --quiet HEAD; then
         # Lấy remote URL và thay thế bằng URL có token
         REMOTE_URL=$(git remote get-url origin 2>/dev/null || echo "")
         if [ -n "$REMOTE_URL" ]; then
-            # Nếu là HTTPS URL, thêm token vào
+            # Nếu là HTTPS URL, thêm token vào (dạng basic auth: username:password)
+            # Với GitHub, username có thể là 'oauth2' hoặc bất kỳ, password là token
             if [[ "$REMOTE_URL" == https://* ]]; then
                 # Extract owner và repo từ URL (format: https://github.com/owner/repo.git)
                 if [[ "$REMOTE_URL" =~ https://github.com/([^/]+)/([^/]+)\.git$ ]] || [[ "$REMOTE_URL" =~ https://github.com/([^/]+)/([^/]+)$ ]]; then
                     OWNER="${BASH_REMATCH[1]}"
                     REPO="${BASH_REMATCH[2]}"
-                    # Push với token trong URL
-                    PUSH_URL="https://${GH_TOKEN}@github.com/${OWNER}/${REPO}.git"
+                    # Push với token trong URL: oauth2:TOKEN
+                    PUSH_URL="https://oauth2:${GH_TOKEN}@github.com/${OWNER}/${REPO}.git"
                     echo "[INFO] Đang push với token..."
                     git push "$PUSH_URL" main
                 else
-                    # Fallback: thử cách khác - replace URL trực tiếp
-                    PUSH_URL=$(echo "$REMOTE_URL" | sed "s|https://|https://${GH_TOKEN}@|")
+                    # Fallback: replace URL trực tiếp, thêm oauth2:token@
+                    PUSH_URL=$(echo "$REMOTE_URL" | sed "s|https://|https://oauth2:${GH_TOKEN}@|")
                     echo "[INFO] Đang push với token (fallback)..."
                     git push "$PUSH_URL" main
                 fi
@@ -226,19 +227,19 @@ if [ $REMOTE_TAG_EXISTS -ne 0 ]; then
     # Lấy remote URL và thay thế bằng URL có token
     REMOTE_URL=$(git remote get-url origin 2>/dev/null || echo "")
     if [ -n "$REMOTE_URL" ]; then
-        # Nếu là HTTPS URL, thêm token vào
+        # Nếu là HTTPS URL, thêm token vào (dạng basic auth: username:password)
         if [[ "$REMOTE_URL" == https://* ]]; then
             # Extract owner và repo từ URL (format: https://github.com/owner/repo.git)
             if [[ "$REMOTE_URL" =~ https://github.com/([^/]+)/([^/]+)\.git$ ]] || [[ "$REMOTE_URL" =~ https://github.com/([^/]+)/([^/]+)$ ]]; then
                 OWNER="${BASH_REMATCH[1]}"
                 REPO="${BASH_REMATCH[2]}"
                 # Push tag với token trong URL
-                PUSH_URL="https://${GH_TOKEN}@github.com/${OWNER}/${REPO}.git"
+                PUSH_URL="https://oauth2:${GH_TOKEN}@github.com/${OWNER}/${REPO}.git"
                 echo "[INFO] Đang push tag với token..."
                 git push "$PUSH_URL" "v$VERSION"
             else
-                # Fallback: thử cách khác - replace URL trực tiếp
-                PUSH_URL=$(echo "$REMOTE_URL" | sed "s|https://|https://${GH_TOKEN}@|")
+                # Fallback: replace URL trực tiếp, thêm oauth2:token@
+                PUSH_URL=$(echo "$REMOTE_URL" | sed "s|https://|https://oauth2:${GH_TOKEN}@|")
                 echo "[INFO] Đang push tag với token (fallback)..."
                 git push "$PUSH_URL" "v$VERSION"
             fi
